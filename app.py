@@ -527,8 +527,80 @@ else:
             title="Bitrate vs SSIM",
         )
         st.plotly_chart(style_chart(fig_ssim), use_container_width=True)
+        # =========================
+# E. Encoded Video Preview
+# =========================
 
-st.subheader("E. Downloads")
+st.subheader("E. Encoded Video Preview")
+
+download_rows = st.session_state["downloads"]
+
+if download_rows:
+
+    col1, col2 = st.columns(2)
+
+    hevc_item = next(
+        (x for x in download_rows if x["codec"] == "HEVC"),
+        None
+    )
+
+    vvc_item = next(
+        (x for x in download_rows if x["codec"] == "VVC"),
+        None
+    )
+
+    with col1:
+
+        st.markdown("### HEVC Output")
+
+        if hevc_item:
+
+            hevc_path = Path(hevc_item["path"])
+
+            if hevc_path.exists():
+                st.video(str(hevc_path))
+
+    with col2:
+
+        st.markdown("### VVC Output")
+
+        st.warning(
+            """
+⚠ Most browsers do not support VVC (H.266) playback.
+
+Please download the file and open it using:
+
+• VLC Media Player
+
+• MPV Player
+
+• FFplay
+            """
+        )
+
+        if vvc_item:
+
+            vvc_path = Path(vvc_item["path"])
+
+            if vvc_path.exists():
+
+                with open(vvc_path, "rb") as f:
+
+                    st.download_button(
+                        "Download VVC Video",
+                        data=f,
+                        file_name=vvc_path.name,
+                        mime="video/mp4"
+                    )
+
+else:
+
+    st.info(
+        "Encoded video previews will appear after encoding."
+    )
+
+st.subheader("F. Downloads")
+
 
 csv_path = RESULTS_DIR / "hevc_vvc_results.csv"
 results_df.to_csv(csv_path, index=False)
