@@ -1,12 +1,39 @@
 import subprocess
 import re
 import os
+import shutil
 
 
-def calculate_psnr(original, compressed):
+def find_ffmpeg():
+    path_ffmpeg = shutil.which("ffmpeg")
+
+    if path_ffmpeg:
+        return path_ffmpeg
+
+    winget_packages = os.path.join(
+        os.path.expanduser("~"),
+        "AppData",
+        "Local",
+        "Microsoft",
+        "WinGet",
+        "Packages"
+    )
+
+    if not os.path.isdir(winget_packages):
+        return "ffmpeg"
+
+    for root, _, files in os.walk(winget_packages):
+        if "ffmpeg.exe" in files and "Gyan.FFmpeg" in root:
+            return os.path.join(root, "ffmpeg.exe")
+
+    return "ffmpeg"
+
+
+def calculate_psnr(original, compressed, ffmpeg_executable=None):
+    ffmpeg_executable = ffmpeg_executable or find_ffmpeg()
 
     cmd = [
-        "ffmpeg",
+        ffmpeg_executable,
         "-i", original,
         "-i", compressed,
         "-lavfi", "psnr",
@@ -33,10 +60,11 @@ def calculate_psnr(original, compressed):
     return None
 
 
-def calculate_ssim(original, compressed):
+def calculate_ssim(original, compressed, ffmpeg_executable=None):
+    ffmpeg_executable = ffmpeg_executable or find_ffmpeg()
 
     cmd = [
-        "ffmpeg",
+        ffmpeg_executable,
         "-i", original,
         "-i", compressed,
         "-lavfi", "ssim",
@@ -90,33 +118,39 @@ def bitrate_saving(hevc_file, vvc_file):
 def evaluate_video(
     original,
     hevc_file,
-    vvc_file
+    vvc_file,
+    ffmpeg_executable=None
 ):
+    ffmpeg_executable = ffmpeg_executable or find_ffmpeg()
 
     results = {
 
         "hevc_psnr":
             calculate_psnr(
                 original,
-                hevc_file
+                hevc_file,
+                ffmpeg_executable
             ),
 
         "vvc_psnr":
             calculate_psnr(
                 original,
-                vvc_file
+                vvc_file,
+                ffmpeg_executable
             ),
 
         "hevc_ssim":
             calculate_ssim(
                 original,
-                hevc_file
+                hevc_file,
+                ffmpeg_executable
             ),
 
         "vvc_ssim":
             calculate_ssim(
                 original,
-                vvc_file
+                vvc_file,
+                ffmpeg_executable
             ),
 
         "hevc_cr":
